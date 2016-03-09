@@ -1,0 +1,55 @@
+#include <unistd.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <sys/param.h>
+
+void isReadable(char * pathName){
+	if(pathName == NULL) return;
+	struct stat area,  *s=&area;
+	DIR *currDir;
+	struct dirent *dir;
+	char* currPath = NULL;
+
+	if(access(pathName, R_OK) == 0){
+		if(lstat(pathName,s) == 0) {
+			if(S_ISREG(s->st_mode)){	
+				printf("%s\n", pathName);
+				free(pathName);
+			}
+			else if(S_ISDIR(s->st_mode)){
+				currDir = opendir(pathName);			
+				while((dir = readdir(currDir)) != NULL){
+					if(strcmp(dir->d_name, ".") != 0 
+					&& strcmp(dir->d_name, "..") != 0){
+						currPath = malloc(sizeof(char)*(
+								strlen(pathName)+strlen(dir->d_name)+2));
+						strcpy(currPath, pathName);
+						strcat(currPath, "/");		
+						strcat(currPath, dir->d_name);						
+						isReadable(currPath);
+					}
+				}
+				closedir(currDir);
+			}
+		}
+	}
+	else{
+		printf("... File doesn't exist or can't get to it ...\n");
+	}
+}
+
+int main(int argc, char *argv[]){
+	char *pathName = NULL;	
+	if(argc == 2){
+		chdir(argv[1]);
+	}
+	pathName  = getcwd(pathName, 511);
+	isReadable(pathName);
+	free(pathName);
+	return 0;
+}
